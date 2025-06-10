@@ -1,39 +1,39 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate  } from "react-router-dom";
 import FacebookIcon from "../assets/facebook-icon.png"
 import GoogleIcon from "../assets/google-icon.png"
 
+import {registerUser} from "../redux/slices/authSlice";
+import { useDispatch } from "react-redux";
+import { toast } from 'sonner';
+
 const CreateAccount = () => {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("");
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleGoogleSignup = () => {
-    window.location.href = "https://accounts.google.com/signin";
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleFacebookSignup = () => {
-    window.location.href = "https://www.facebook.com/login/";
-  };
+  const resultAction = await dispatch(registerUser({ name, email, password, role }));
 
-  const validateEmail = (email) => {
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return pattern.test(email);
-  };
+  if (registerUser.fulfilled.match(resultAction)) {
+    toast.success("Account created successfully!");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+    const userRole = resultAction.payload?.role?.toLowerCase();
 
-    // Email validation
-    if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address.");
-      return;
+    if (userRole === "admin") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/"); 
     }
-
-    setEmailError("");
-    // Proceed with form submission (e.g., call API)
-    console.log("Email:", email);
-    console.log("Password:", password);
+  } else {
+    const errorMessage = resultAction.payload?.message || "Registration failed";
+    toast.error(errorMessage);
+  }
   };
 
   return (
@@ -48,19 +48,24 @@ const CreateAccount = () => {
         </p>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
+            <label className="text-sm font-medium block mb-1">Name</label>
+              <input
+                type="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter Your Name"
+                className="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 "
+              />
+          </div>
+          <div>
             <label className="text-sm font-medium block mb-1">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter Email Address"
-              className={`w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 ${
-                emailError ? "border-red-500 focus:ring-red-500" : "focus:ring-blue-500"
-              }`}
+              className="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 "
             />
-            {emailError && (
-              <p className="text-red-500 text-sm mt-1">{emailError}</p>
-            )}
           </div>
           <div>
             <label className="text-sm font-medium block mb-1">Password</label>
@@ -71,6 +76,16 @@ const CreateAccount = () => {
               placeholder="Create Password"
               className="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Role</label>
+              <input
+                type="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="Admin/user"
+                className="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-2 "
+              />
           </div>
           <button
             type="submit"
@@ -94,7 +109,6 @@ const CreateAccount = () => {
 
         <div className="space-y-2">
           <button
-            onClick={handleGoogleSignup}
             className="w-full flex items-center justify-center border py-2 rounded hover:bg-gray-100"
           >
             <img
@@ -105,7 +119,6 @@ const CreateAccount = () => {
             Continue with Google
           </button>
           <button
-            onClick={handleFacebookSignup}
             className="w-full flex items-center justify-center border py-2 rounded hover:bg-gray-100"
           >
             <img

@@ -1,43 +1,26 @@
-import React from "react";
+import React, {useEffect} from "react";
 // import ArrowR from "../assets/arrowR.png"
-import bag from "../assets/productimg/black-bag.png";
-import hoodie from "../assets/productimg/hoodie.png";
-import shoes from "../assets/productimg/shoes.png";
-import perfume from "../assets/productimg/veleno-perfume.png";
 import { Link } from "react-router-dom";
+import {FiChevronRight,FiChevronLeft } from "react-icons/fi"
 
-const products = [
-  {
-    id: 1,
-    name: "CHANEL Mini Flap Bag",
-    description: "Lambskin & gold-tone metal, black",
-    price: "9,900,000 ",
-    image: bag,
-  },
-  {
-    id: 2,
-    name: "Converse Shoes",
-    description: "Chuck Taylor All Star Trek - Chuck 70 Platform Shoes Ecru US 9aI",
-    price: "540,000 ",
-    image: shoes,
-  },
-  {
-    id: 3,
-    name: "Essential Hoodie",
-    description: "Buttercream Essential Hoodie",
-    price: "370,000 ",
-    image: hoodie,
-  },
-  {
-    id: 4,
-    name: "Veleno Perfume",
-    description: "Veleno Perfume, 100ml",
-    price: "28,000 ",
-    image: perfume,
-  },
-];
+
+import { useDispatch, useSelector } from "react-redux";
+import { fetchFeatureProducts } from "../redux/slices/productSlice";
 
 const FeatureProduct = () => {
+  const dispatch = useDispatch();
+  const { products, loading, error } = useSelector(
+      (state) => state.products
+    );
+
+     useEffect(() => {
+    dispatch(fetchFeatureProducts());
+  }, [dispatch]);
+
+    if (loading) return <p>Loading feature products...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
+
   return (
     <div>
       <section className="ml-16 flex flex-col mb-10 md:mb-20 space-y-3 ">
@@ -50,18 +33,31 @@ const FeatureProduct = () => {
           </div>
         </div>
 
+        {/* Chevron Buttons */}
+        <button
+          className="absolute left-0 flex space-x-2 bg-white shadow p-2 rounded-full"
+        >
+          <FiChevronLeft className="text-2xl" />
+        </button>
+        <button
+          className="absolute right-0  flex space-x-2 bg-white shadow p-2 rounded-full"
+
+        >
+          <FiChevronRight className="text-2xl" />
+        </button>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 mr-16 ">
           {products.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               className="bg-white shadow-lg rounded-[27px] flex flex-col transform transition duration-300 hover:scale-105"
             >
               <Link
-                to={`/product/${product.id}`}
+                to={`/product/${product._id}`}
                 className="w-full h-full flex flex-col items-start hover:shadow-xl transition-all"
               >
               <img
-                src={product.image}
+                src={product.images?.[0]?.url}
                 alt={product.name}
                 className="w-full h-full object-contain rounded-[27px] p-2"
               />

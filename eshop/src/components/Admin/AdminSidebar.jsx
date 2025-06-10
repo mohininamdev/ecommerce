@@ -6,6 +6,7 @@ import {
   FaTags,
   FaUsers,
   FaSignOutAlt,
+  FaRegCommentDots
 } from 'react-icons/fa';
 import profileIcon from "../../assets/profile.png";
 
@@ -15,6 +16,7 @@ const links = [
     { name: 'Products', path: '/admin/products', icon: <FaBox /> },
     { name: 'Categories', path: '/admin/categories', icon: <FaTags /> },
     { name: 'Customers', path: '/admin/customers', icon: <FaUsers /> },
+    { name: 'Customers', path: '/admin/contactUs', icon: <FaRegCommentDots/> },
   ];
 
 export default function AdminSidebar({ isExpanded, setIsExpanded }) {

@@ -1,17 +1,30 @@
 import { token } from "morgan";
 import userModel from "../models/userModel.js";
+import cloudinary from "cloudinary";
+import { getDataUri } from "../utils/features.js";
 export const registerController = async (req, res) => {
   try {
-    const { name, email, password, address, city, country, phone, answer } = req.body;
+    const {
+      name,
+      email,
+      role,
+      password,
+      address,
+      city,
+      country,
+      phone,
+      answer,
+    } = req.body;
     //validation
     if (
       !name ||
       !email ||
-      !password ||
-      !address ||
-      !city ||
-      !country ||
-      !phone || !answer
+      !role ||
+      !password
+      // !address ||
+      // !city ||
+      // !country ||
+      // !phone || !answer
     ) {
       return res.status(500).send({
         success: false,
@@ -30,13 +43,15 @@ export const registerController = async (req, res) => {
     const user = await userModel.create({
       name,
       email,
+      role,
       password,
-      address,
-      city,
-      country,
-      phone,
-      answer
+      // address,
+      // city,
+      // country,
+      // phone,
+      // answer
     });
+    await user.save();
     res.status(201).send({
       success: true,
       message: "Registeration Success, Please Login",
@@ -134,9 +149,9 @@ export const logoutController = async (req, res) => {
       .status(200)
       .cookie("token", "", {
         expires: new Date(Date.now()),
-        secure: process.env.NODE_ENV === "development" ? true : false,
-        httpOnly: process.env.NODE_ENV === "development" ? true : false,
-        sameSite: process.env.NODE_ENV === "development" ? true : false,
+        httpOnly: true,
+        secure: process.env.NODE_ENV !== "development", // true in production
+        sameSite: process.env.NODE_ENV !== "development" ? "none" : "lax", // none for cross-origin, lax for dev
       })
       .send({
         success: true,
@@ -151,6 +166,7 @@ export const logoutController = async (req, res) => {
     });
   }
 };
+
 
 //update profile
 export const updateProfileController = async (req, res) => {
@@ -170,6 +186,7 @@ export const updateProfileController = async (req, res) => {
     res.status(200).send({
       success: true,
       message: "User Profile Updated",
+      user,
     });
   } catch (error) {
     console.log(error);
@@ -185,7 +202,7 @@ export const updateProfileController = async (req, res) => {
 export const updatePasswordController = async (req, res) => {
   try {
     const user = await userModel.findById(req.user._id);
-    const { oldPassword, newPassword } = req.body
+    const { oldPassword, newPassword } = req.body;
     //validation + updates
     if (!oldPassword || !newPassword) {
       return res.status(500).send({
@@ -257,3 +274,131 @@ export const passwordResetController = async (req, res) => {
     });
   }
 };
+
+/// Update user profile photo
+export const updateProfilePicController = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+
+    if (!req.file) {
+      return res.status(400).send({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
+    // file get from client photo
+    const file = getDataUri(req.file);
+    // // delete prev image
+
+
+    // await cloudinary.v2.uploader.destroy(user.profilePic.public_id); //works when pro. pic already set. unable to work in first time for first time we need to coment it out
+    // // await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    // // update
+
+    if (user.profilePic && user.profilePic.public_id) {
+  await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+}
+
+    const cdb = await cloudinary.v2.uploader.upload(file.content);
+    user.profilePic = {
+      public_id: cdb.public_id,
+      url: cdb.secure_url,
+    };
+    // save func
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "profile picture updated",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      success: false,
+      message: "Error In update profile pic API",
+      error,
+    });
+  }
+};
+
+// Get User Controller
+export const getAllUserController = async (req, res) => {
+  try {
+    const users = await userModel.find().select("-password"); // Avoid sending passwords
+    res.status(200).json(
+      { 
+        success: true, 
+        users 
+      }
+    );
+  } catch (error) {
+    res.status(500).json(
+      { 
+        success: false, 
+        message: "Server Error", 
+        error 
+      }
+    );
+  }
+};
+
+// DELETE USER CONTROLLER
+export const deleteUserController = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Find the user by ID
+    const user = await userModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Delete profile picture from cloudinary if exists
+    if (user.profilePic && user.profilePic.public_id) {
+      await cloudinary.v2.uploader.destroy(user.profilePic.public_id);
+    }
+
+    // Delete user from DB
+    await userModel.findByIdAndDelete(userId);
+
+    res.status(200).send({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete User Error:", error);
+    res.status(500).send({
+      success: false,
+      message: "Error deleting user",
+      error,
+    });
+  }
+};
+
+export const getSingleUserById = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.params.id).select("-password"); // hide password
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user details",
+      error: err.message,
+    });
+  }
+};
+
+

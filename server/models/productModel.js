@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-//REVIEW MODEL SCHEMA 
+//REVIEW MODEL SCHEMA
 const reviewSchema = new mongoose.Schema(
   {
     name: {
@@ -40,17 +40,37 @@ const productSchema = new mongoose.Schema(
     stock: {
       type: Number,
       required: [true, "Product stock is required"],
+      default:0,
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
-      rerf: "Category",
+      ref: "Category",
     },
-    image: [
+    brand: {
+      type: String,
+    },
+    material: {
+      type: String,
+    },
+    size: {
+      type: [String],
+    },
+    colors: {
+      type: [String],
+    },
+    images: [
       {
         public_id: String,
         url: String,
       },
     ],
+    weight: {
+      type: Number,
+    },
+    gender: {
+      type: String,
+      enum: ["men", "women", "other"],
+    },
     reviews: [reviewSchema],
     rating: {
       type: Number,
@@ -60,6 +80,8 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    tags:[String],
+    
   },
   { timestamps: true }
 );

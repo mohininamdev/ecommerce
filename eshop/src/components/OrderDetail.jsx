@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import card from "../assets/card-icon.png";
 import photo from "../assets/photo-icon.png";
 
-const CheckoutDetailDelivery = () => {
+const OrderDetail = () => {
   const [tab, setTab] = useState("payment");
 
   return (
@@ -168,7 +168,7 @@ const CheckoutDetailDelivery = () => {
                   </label>
                 ))}
               </div>
-              <Link to="/order">
+              <Link to="/orderDetail">
                 <button className="mt-4 bg-red-700 text-white px-6 py-2 rounded-full w-fit">BACK</button>
               </Link>
             </div>
@@ -179,4 +179,4 @@ const CheckoutDetailDelivery = () => {
   );
 };
 
-export default CheckoutDetailDelivery;
+export default OrderDetail;

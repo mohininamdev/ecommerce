@@ -31,9 +31,9 @@ const orderSchema = new mongoose.Schema(
           required: [true, "product quantity is require"],
         },
         // image: {
-        //   type: String,
-        //   required: [true, "product image is require"],
-        // },
+        //    type: String,
+        //   //  required: [true, "product image is require"],
+        //  },
         product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Products",
@@ -51,7 +51,15 @@ const orderSchema = new mongoose.Schema(
       ref: "Users",
       required: [true, "user id is require"],
     },
-    paidAt: Date,
+    // username:{
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Users",
+    //   required: [true, "user id is require"],
+    // },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
     paymentInfo: {
       id: String,
       status: String,
@@ -74,10 +82,13 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ["processing", "shipped", "deliverd"],
+      enum: ["processing", "shipped", "delivered"],
       default: "processing",
     },
-    deliverdAt: Date,
+    deliverdAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

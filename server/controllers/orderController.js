@@ -1,6 +1,9 @@
 import orderModel from "../models/orderModel.js";
 import productModel from "../models/productModel.js";
-// import { stripe } from "../server.js";
+import { stripe } from "../server.js";
+
+
+
 
 // CREATE ORDERS
 export const createOrderController = async (req, res) => {
@@ -33,6 +36,12 @@ export const createOrderController = async (req, res) => {
     for (let i = 0; i < orderItems.length; i++) {
       // find product
       const product = await productModel.findById(orderItems[i].product);
+      if (!product) {
+    return res.status(404).send({
+      success: false,
+      message: `Product not found with ID: ${orderItems[i].product}`,
+    });
+  }
       product.stock -= orderItems[i].quantity;
       await product.save();
     }
@@ -45,10 +54,13 @@ export const createOrderController = async (req, res) => {
     res.status(500).send({
       success: false,
       message: "Error In Create Order API",
-      error,
+      error: error.message || "Unknown error",
     });
   }
 };
+
+
+
 
 // GET ALL ORDERS - MY ORDERS
 export const getMyOrdersCotroller = async (req, res) => {
@@ -112,12 +124,60 @@ export const singleOrderDetrailsController = async (req, res) => {
   }
 };
 
-// ========== ADMIN SECTION =============
+// ACCEPT PAYMENTS
+export const paymentsController = async (req, res) => {
+  try {
+    // get ampunt
+    const { totalAmount, description, customerName, customerAddress } = req.body;
+    // validation
+    if (!totalAmount || !customerName || !customerAddress) {
+      return res.status(400).send({
+        success: false,
+        message: "Missing required payment information",
+      });
+    }
+    
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Number(totalAmount * 100),
+      currency: "inr",
+      description,
+      shipping: {
+        name: customerName,
+        address: {
+          line1: customerAddress.line1,
+          line2: customerAddress.line2 || "",
+          city: customerAddress.city,
+          state: customerAddress.state,
+          postal_code: customerAddress.postal_code,
+          country: customerAddress.country, // e.g., "IN"
+        },
+      },
+      metadata: {
+        integration_check: "accept_a_payment",
+      },
+    });
+    res.status(200).send({
+      success: true,
+      client_secret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    console.error("Stripe Payment Error =>", error);
+    res.status(500).send({
+      success: false,
+      message: "Error In Get order Payments API",
+      error: error.message,
+    });
+  }
+};
+
+
+// ==== ADMIN SECTION ====
 
 // GET ALL ORDERS
 export const getAllOrdersController = async (req, res) => {
   try {
-    const orders = await orderModel.find({});
+    const orders = await orderModel.find({}).populate("user", "name email"); 
+    // const orders = await orderModel.find({});
     res.status(200).send({
       success: true,
       message: "All Orders Data",
@@ -175,5 +235,63 @@ export const changeOrderStatusController = async (req, res) => {
       message: "Error In Get UPDATE Products API",
       error,
     });
+  }
+};
+
+export const deleteOrderController = async (req, res) => {
+  try {
+    // find product
+    const order = await orderModel.findById(req.params.id);
+    // validation
+    if (!order) {
+      return res.status(404).send({
+        success: false,
+        message: "Order not found",
+      });
+    }
+    await order.deleteOne();
+    res.status(200).send({
+      success: true,
+      message: "Order removed Successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    // cast error ||  OBJECT ID
+    if (error.name === "CastError") {
+      return res.status(500).send({
+        success: false,
+        message: "Invalid Id",
+      });
+    }
+    res.status(500).send({
+      success: false,
+      message: "Error In Get DELETE order API",
+      error,
+    });
+  }
+};
+
+export const cancelOrderByUser = async (req, res) => {
+  try {
+    const order = await orderModel.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ 
+         success: false,
+        message: "Order not found" 
+      });
+    }
+    order.orderStatus = "cancelled_by_user"; // Corrected field name
+    await order.save();
+    res.status(200).send({
+      success: true,
+      message: "Order removed Successfully",
+    });
+    // Update the status
+
+    res.status(200).json(order);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
